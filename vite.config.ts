@@ -4,9 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    return {
-      // ★ ここを追加！リポジトリ名で囲む
-      base: '/smart-vocab-trainer/', 
+    return { 
       
       server: {
         port: 3000,
