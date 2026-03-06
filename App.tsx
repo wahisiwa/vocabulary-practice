@@ -31,7 +31,11 @@ const App: React.FC = () => {
 
   const startTest = (mode: TestMode) => {
     setCurrentMode(mode);
-    setShuffledList(shuffleArray(WORD_LIST));
+    // QUIZ mode uses only 10 random words
+    const wordList = mode === TestMode.QUIZ_EN_TO_JP || mode === TestMode.QUIZ_JP_TO_EN
+      ? shuffleArray(WORD_LIST).slice(0, 10)
+      : shuffleArray(WORD_LIST);
+    setShuffledList(wordList);
     setCurrentIndex(0);
     setCorrectCount(0);
     setShowAnswer(false);
@@ -74,28 +78,66 @@ const App: React.FC = () => {
             <p className="text-slate-500">全部で {WORD_LIST.length} 問あります</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => startTest(TestMode.EN_TO_JP)}
-              className="flex flex-col items-center justify-center p-8 bg-indigo-50 border-2 border-indigo-100 rounded-2xl hover:bg-indigo-100 hover:border-indigo-200 transition-all duration-300 group"
-            >
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 text-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                <i className="fas fa-language"></i>
-              </div>
-              <span className="font-bold text-indigo-900">EN → JP</span>
-              <span className="text-xs text-indigo-600 mt-1">英単語を見て日本語を答える</span>
-            </button>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <i className="fas fa-book text-indigo-600"></i>
+                フルテスト
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={() => startTest(TestMode.EN_TO_JP)}
+                  className="flex flex-col items-center justify-center p-8 bg-indigo-50 border-2 border-indigo-100 rounded-2xl hover:bg-indigo-100 hover:border-indigo-200 transition-all duration-300 group"
+                >
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 text-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                    <i className="fas fa-language"></i>
+                  </div>
+                  <span className="font-bold text-indigo-900">EN → JP</span>
+                  <span className="text-xs text-indigo-600 mt-1">英単語を見て日本語を答える</span>
+                </button>
 
-            <button
-              onClick={() => startTest(TestMode.JP_TO_EN)}
-              className="flex flex-col items-center justify-center p-8 bg-emerald-50 border-2 border-emerald-100 rounded-2xl hover:bg-emerald-100 hover:border-emerald-200 transition-all duration-300 group"
-            >
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-emerald-600 text-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                <i className="fas fa-font"></i>
+                <button
+                  onClick={() => startTest(TestMode.JP_TO_EN)}
+                  className="flex flex-col items-center justify-center p-8 bg-emerald-50 border-2 border-emerald-100 rounded-2xl hover:bg-emerald-100 hover:border-emerald-200 transition-all duration-300 group"
+                >
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-emerald-600 text-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                    <i className="fas fa-font"></i>
+                  </div>
+                  <span className="font-bold text-emerald-900">JP → EN</span>
+                  <span className="text-xs text-emerald-600 mt-1">日本語を見て英単語を答える</span>
+                </button>
               </div>
-              <span className="font-bold text-emerald-900">JP → EN</span>
-              <span className="text-xs text-emerald-600 mt-1">日本語を見て英単語を答える</span>
-            </button>
+            </div>
+
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="text-lg font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <i className="fas fa-clipboard-check text-rose-600"></i>
+                確認テスト (10問)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={() => startTest(TestMode.QUIZ_EN_TO_JP)}
+                  className="flex flex-col items-center justify-center p-8 bg-rose-50 border-2 border-rose-100 rounded-2xl hover:bg-rose-100 hover:border-rose-200 transition-all duration-300 group"
+                >
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-rose-600 text-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                    <i className="fas fa-bolt"></i>
+                  </div>
+                  <span className="font-bold text-rose-900">EN → JP</span>
+                  <span className="text-xs text-rose-600 mt-1">ランダム10問</span>
+                </button>
+
+                <button
+                  onClick={() => startTest(TestMode.QUIZ_JP_TO_EN)}
+                  className="flex flex-col items-center justify-center p-8 bg-amber-50 border-2 border-amber-100 rounded-2xl hover:bg-amber-100 hover:border-amber-200 transition-all duration-300 group"
+                >
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-amber-600 text-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                    <i className="fas fa-bolt"></i>
+                  </div>
+                  <span className="font-bold text-amber-900">JP → EN</span>
+                  <span className="text-xs text-amber-600 mt-1">ランダム10問</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </Layout>
@@ -142,8 +184,9 @@ const App: React.FC = () => {
 
   // Test Screen
   const currentWord = shuffledList[currentIndex];
-  const question = currentMode === TestMode.EN_TO_JP ? currentWord.en : currentWord.jp;
-  const answer = currentMode === TestMode.EN_TO_JP ? currentWord.jp : currentWord.en;
+  const isQuizMode = currentMode === TestMode.QUIZ_EN_TO_JP || currentMode === TestMode.QUIZ_JP_TO_EN;
+  const question = (currentMode === TestMode.EN_TO_JP || currentMode === TestMode.QUIZ_EN_TO_JP) ? currentWord.en : currentWord.jp;
+  const answer = (currentMode === TestMode.EN_TO_JP || currentMode === TestMode.QUIZ_EN_TO_JP) ? currentWord.jp : currentWord.en;
   const progress = ((currentIndex) / shuffledList.length) * 100;
 
   return (

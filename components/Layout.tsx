@@ -21,8 +21,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </main>
       </div>
       <footer className="mt-8 text-slate-400 text-sm font-medium">
-        © 2024 Vocabulary Mastery Inc.
-      </footer>$ npm install gh-pages --save-dev
+        © 2026 Vocabulary Mastery Inc.
+      </footer>
     </div>
   );
 };
