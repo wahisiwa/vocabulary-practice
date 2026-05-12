@@ -207,11 +207,11 @@ const App: React.FC = () => {
         </div>
 
         {/* Question Card */}
-        <div className="min-h-[240px] flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-3xl shadow-inner text-center">
+        <div className="min-h-[240px] flex flex-col items-center justify-center p-5 sm:p-8 bg-slate-50 border border-slate-200 rounded-3xl shadow-inner text-center">
           <div className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-4">
             {currentMode === TestMode.EN_TO_JP ? 'English' : 'Japanese'}
           </div>
-          <h3 className="text-5xl font-bold text-slate-800 break-words w-full">
+          <h3 className="vocab-display-text font-bold text-slate-800 w-full">
             {question}
           </h3>
           
@@ -219,7 +219,7 @@ const App: React.FC = () => {
             <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">
               Correct Answer
             </div>
-            <div className="text-3xl font-bold text-emerald-600">
+            <div className="vocab-answer-text font-bold text-emerald-600">
               {showAnswer ? answer : '?'}
             </div>
           </div>

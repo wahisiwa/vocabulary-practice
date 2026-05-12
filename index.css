@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.vocab-display-text,
+.vocab-answer-text {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  text-wrap: balance;
+}
+
+.vocab-display-text {
+  font-size: clamp(1.5rem, 8.5vw, 3rem);
+  line-height: 1.12;
+}
+
+.vocab-answer-text {
+  font-size: clamp(1.375rem, 6.5vw, 1.875rem);
+  line-height: 1.2;
+}
