@@ -10,6 +10,7 @@ export interface WordPair {
   id: number;
   en: string;
   jp: string;
+  reading: string;
 }
 
 export interface TestResult {

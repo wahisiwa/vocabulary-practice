@@ -21,6 +21,43 @@ const getRank = (score: number): string => {
   return 'D';
 };
 
+const getSpeakableText = (text: string): string => {
+  return text.replace(/[〜~]/g, '').replace(/\s+/g, ' ').trim();
+};
+
+interface ReadingPillProps {
+  reading: string;
+}
+
+const ReadingPill: React.FC<ReadingPillProps> = ({ reading }) => {
+  return (
+    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm sm:text-base font-bold text-slate-600 shadow-sm">
+      {reading}
+    </div>
+  );
+};
+
+interface PronunciationButtonProps {
+  word: WordPair;
+  canSpeak: boolean;
+  onSpeak: (word: WordPair) => void;
+}
+
+const PronunciationButton: React.FC<PronunciationButtonProps> = ({ word, canSpeak, onSpeak }) => {
+  return (
+    <button
+      type="button"
+      onClick={() => onSpeak(word)}
+      disabled={!canSpeak}
+      aria-label={`${word.en} の発音を再生`}
+      title={canSpeak ? '英語の発音を再生' : 'このブラウザは音声再生に対応していません'}
+      className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-full bg-indigo-600 text-base text-white shadow-md transition-all hover:bg-indigo-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+    >
+      <i className="fas fa-volume-high"></i>
+    </button>
+  );
+};
+
 const App: React.FC = () => {
   const [currentMode, setCurrentMode] = useState<TestMode | null>(null);
   const [shuffledList, setShuffledList] = useState<WordPair[]>([]);
@@ -28,6 +65,27 @@ const App: React.FC = () => {
   const [correctCount, setCorrectCount] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
+  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const speakWord = useCallback((word: WordPair) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(getSpeakableText(word.en));
+    utterance.lang = 'en-US';
+    utterance.rate = 0.85;
+    window.speechSynthesis.speak(utterance);
+  }, []);
 
   const startTest = (mode: TestMode) => {
     setCurrentMode(mode);
@@ -184,9 +242,9 @@ const App: React.FC = () => {
 
   // Test Screen
   const currentWord = shuffledList[currentIndex];
-  const isQuizMode = currentMode === TestMode.QUIZ_EN_TO_JP || currentMode === TestMode.QUIZ_JP_TO_EN;
-  const question = (currentMode === TestMode.EN_TO_JP || currentMode === TestMode.QUIZ_EN_TO_JP) ? currentWord.en : currentWord.jp;
-  const answer = (currentMode === TestMode.EN_TO_JP || currentMode === TestMode.QUIZ_EN_TO_JP) ? currentWord.jp : currentWord.en;
+  const isEnglishQuestion = currentMode === TestMode.EN_TO_JP || currentMode === TestMode.QUIZ_EN_TO_JP;
+  const question = isEnglishQuestion ? currentWord.en : currentWord.jp;
+  const answer = isEnglishQuestion ? currentWord.jp : currentWord.en;
   const progress = ((currentIndex) / shuffledList.length) * 100;
 
   return (
@@ -207,14 +265,20 @@ const App: React.FC = () => {
         </div>
 
         {/* Question Card */}
-        <div className="min-h-[240px] flex flex-col items-center justify-center p-5 sm:p-8 bg-slate-50 border border-slate-200 rounded-3xl shadow-inner text-center">
+        <div className="relative min-h-[240px] flex flex-col items-center justify-center p-5 sm:p-8 bg-slate-50 border border-slate-200 rounded-3xl shadow-inner text-center">
+          {isEnglishQuestion && (
+            <div className="absolute right-4 top-4 sm:right-5 sm:top-5">
+              <PronunciationButton word={currentWord} canSpeak={canSpeak} onSpeak={speakWord} />
+            </div>
+          )}
+
           <div className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-4">
-            {currentMode === TestMode.EN_TO_JP ? 'English' : 'Japanese'}
+            {isEnglishQuestion ? 'English' : 'Japanese'}
           </div>
           <h3 className="vocab-display-text font-bold text-slate-800 w-full">
             {question}
           </h3>
-          
+
           <div className={`mt-8 transition-all duration-500 ${showAnswer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">
               Correct Answer
@@ -222,6 +286,14 @@ const App: React.FC = () => {
             <div className="vocab-answer-text font-bold text-emerald-600">
               {showAnswer ? answer : '?'}
             </div>
+            {showAnswer && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <ReadingPill reading={currentWord.reading} />
+                {!isEnglishQuestion && (
+                  <PronunciationButton word={currentWord} canSpeak={canSpeak} onSpeak={speakWord} />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
