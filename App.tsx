@@ -25,6 +25,13 @@ const getSpeakableText = (text: string): string => {
   return text.replace(/[〜~]/g, '').replace(/\s+/g, ' ').trim();
 };
 
+const getEnglishVoice = (voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined => {
+  return (
+    voices.find(voice => voice.lang.toLowerCase().startsWith('en-us')) ||
+    voices.find(voice => voice.lang.toLowerCase().startsWith('en'))
+  );
+};
+
 interface ReadingPillProps {
   reading: string;
 }
@@ -58,6 +65,52 @@ const PronunciationButton: React.FC<PronunciationButtonProps> = ({ word, canSpea
   );
 };
 
+interface WordListSectionProps {
+  canSpeak: boolean;
+  speechError: string | null;
+  onSpeak: (word: WordPair) => void;
+}
+
+const WordListSection: React.FC<WordListSectionProps> = ({ canSpeak, speechError, onSpeak }) => {
+  return (
+    <section className="border-t border-slate-200 pt-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+          <i className="fas fa-list text-slate-500"></i>
+          単語一覧
+        </h3>
+        <span className="text-sm font-bold text-slate-400">{WORD_LIST.length}語</span>
+      </div>
+
+      {speechError && (
+        <p className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-xs font-bold leading-relaxed text-rose-600">
+          {speechError}
+        </p>
+      )}
+
+      <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        {WORD_LIST.map(word => (
+          <div key={word.id} className="flex items-center gap-3 px-4 py-3">
+            <div className="w-8 flex-none text-right text-sm font-bold text-slate-300">
+              {word.id}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-base font-bold text-slate-800">{word.en}</span>
+                <span className="text-sm font-bold text-slate-500">{word.jp}</span>
+              </div>
+              <div className="mt-1 text-xs font-medium text-slate-400">
+                {word.reading}
+              </div>
+            </div>
+            <PronunciationButton word={word} canSpeak={canSpeak} onSpeak={onSpeak} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
 const App: React.FC = () => {
   const [currentMode, setCurrentMode] = useState<TestMode | null>(null);
   const [shuffledList, setShuffledList] = useState<WordPair[]>([]);
@@ -65,27 +118,67 @@ const App: React.FC = () => {
   const [correctCount, setCorrectCount] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
+  const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    const loadVoices = () => {
+      setSpeechVoices(window.speechSynthesis.getVoices());
+    };
+
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+
     return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+      window.speechSynthesis.cancel();
     };
   }, []);
 
   const speakWord = useCallback((word: WordPair) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setSpeechError('このブラウザは音声再生に対応していません。');
       return;
     }
 
-    window.speechSynthesis.cancel();
+    setSpeechError(null);
+    const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(getSpeakableText(word.en));
-    utterance.lang = 'en-US';
+    const englishVoice = getEnglishVoice(speechVoices);
+
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+      utterance.lang = englishVoice.lang;
+    } else {
+      utterance.lang = 'en-US';
+    }
+
     utterance.rate = 0.85;
-    window.speechSynthesis.speak(utterance);
-  }, []);
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onerror = () => {
+      setSpeechError('音声を再生できませんでした。SafariやChromeで開き直すか、端末の音量設定を確認してください。');
+    };
+
+    const play = () => {
+      synth.speak(utterance);
+      if (synth.paused) {
+        synth.resume();
+      }
+    };
+
+    if (synth.speaking || synth.pending) {
+      synth.cancel();
+      window.setTimeout(play, 80);
+    } else {
+      play();
+    }
+  }, [speechVoices]);
 
   const startTest = (mode: TestMode) => {
     setCurrentMode(mode);
@@ -197,6 +290,8 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <WordListSection canSpeak={canSpeak} speechError={speechError} onSpeak={speakWord} />
         </div>
       </Layout>
     );
@@ -295,6 +390,12 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
+
+          {speechError && (
+            <p className="mt-4 max-w-sm text-xs font-bold leading-relaxed text-rose-500">
+              {speechError}
+            </p>
+          )}
         </div>
 
         {/* Controls */}
